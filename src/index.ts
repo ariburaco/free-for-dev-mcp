@@ -1,4 +1,4 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -19,7 +19,7 @@ const parser = new EnhancedFreeForDevParser();
 
 const server = new Server(
   {
-    name: '@free-for-dev/mcp-server',
+    name: '@ariburaco/free-for-dev-mcp',
     version: '1.0.0',
   },
   {

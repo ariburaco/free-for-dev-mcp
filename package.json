@@ -1,5 +1,5 @@
 {
-  "name": "@free-for-dev/mcp-server",
+  "name": "@ariburaco/free-for-dev-mcp",
   "version": "1.0.0",
   "description": "MCP server providing semantic search for free developer tools and services",
   "main": "dist/index.js",
