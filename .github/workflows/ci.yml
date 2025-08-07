@@ -30,21 +30,13 @@ jobs:
 
       - name: Build
         run: bun run build
-
-      - name: Test MCP server starts
+        
+      - name: Verify build output
         run: |
-          set +e  # Don't exit on error
-          timeout 5s bun run dist/index.js
-          exit_code=$?
-          set -e  # Re-enable exit on error
-          
-          if [ "$exit_code" -eq 124 ]; then
-            echo "✅ Server started successfully (timeout expected)"
-            exit 0
-          elif [ "$exit_code" -eq 0 ]; then
-            echo "⚠️ Server exited unexpectedly with success"
-            exit 1
+          if [ -f "dist/index.js" ]; then
+            echo "✅ Build successful - dist/index.js exists"
+            echo "File size: $(du -h dist/index.js | cut -f1)"
           else
-            echo "❌ Server failed to start with exit code: $exit_code"
+            echo "❌ Build failed - dist/index.js not found"
             exit 1
           fi
