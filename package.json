@@ -34,6 +34,8 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test-server": "bun run test-server.ts",
+    "test-mcp": "bun run test-mcp-connection.ts",
     "prepublishOnly": "bun run typecheck && bun run test && bun run build"
   },
   "devDependencies": {

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "free-for-dev": {
+      "command": "bun",
+      "args": ["run", "/Users/aliburakozden/Documents/Github/free-for-dev-mcp/dist/index.js"],
+      "env": {}
+    }
+  }
+}
