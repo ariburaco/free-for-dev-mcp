@@ -1,4 +1,4 @@
-import { FreeForDevParser } from './src/parser.ts';
+import { FreeForDevParser } from '../src/parser.ts';
 
 async function testServer() {
   console.log('Testing Free-for-Dev MCP Server Parser...\n');

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "free-for-dev": {
+      "command": "bun",
+      "args": ["run", "your-path/free-for-dev-mcp/dist/index.js"],
+      "env": {}
+    }
+  }
+}

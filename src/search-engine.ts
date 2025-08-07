@@ -29,20 +29,22 @@ export class SearchEngine {
     
     this.fuseOptions = {
       keys: [
-        { name: 'name', weight: 0.3 },
-        { name: 'description', weight: 0.25 },
-        { name: 'category', weight: 0.15 },
-        { name: 'freeTier', weight: 0.15 },
-        { name: 'tags', weight: 0.15 }
+        { name: 'name', weight: 0.25 },
+        { name: 'description', weight: 0.35 },
+        { name: 'freeTier', weight: 0.25 },
+        { name: 'category', weight: 0.1 },
+        { name: 'tags', weight: 0.05 },
+        { name: 'limitations', weight: 0.05 }
       ],
-      threshold: 0.4,
+      threshold: 0.8, // Very lenient to catch more results
       includeScore: true,
       includeMatches: true,
-      minMatchCharLength: 2,
+      minMatchCharLength: 1,
       shouldSort: true,
-      findAllMatches: true,
+      findAllMatches: false, // Don't require all tokens to match
       ignoreLocation: true,
-      useExtendedSearch: true,
+      ignoreFieldNorm: true,
+      useExtendedSearch: false // Use standard fuzzy search
     };
 
     this.fuse = new Fuse(this.services, this.fuseOptions);
@@ -85,14 +87,45 @@ export class SearchEngine {
     if (params.query && params.query.trim()) {
       const searchQuery = this.buildFuseQuery(params.query);
       
+      let fuseResults: FuseResult<Service>[];
       if (results === this.services) {
-        results = this.fuse.search(searchQuery);
+        fuseResults = this.fuse.search(searchQuery);
       } else {
         const filteredFuse = new Fuse(results as Service[], this.fuseOptions);
-        results = filteredFuse.search(searchQuery);
+        fuseResults = filteredFuse.search(searchQuery);
       }
       
-      const searchResults = (results as FuseResult<Service>[]).map(r => ({
+      // If Fuse returns no results, fall back to basic substring search
+      if (fuseResults.length === 0) {
+        const queryLower = params.query.toLowerCase();
+        const queryTerms = queryLower.split(/\s+/).filter(t => t.length > 0);
+        
+        const basicResults = (results as Service[]).filter(service => {
+          const searchableText = [
+            service.name,
+            service.description,
+            service.freeTier,
+            service.category,
+            service.limitations || '',
+            (service.tags || []).join(' ')
+          ].join(' ').toLowerCase();
+          
+          // Check if any query term appears in the searchable text
+          return queryTerms.some(term => searchableText.includes(term));
+        });
+        
+        const searchResults = basicResults.map((item, index) => ({
+          item,
+          score: 0.5, // Middle score for basic matches
+          matches: undefined,
+          refIndex: index
+        }));
+        
+        this.searchCache.set(cacheKey, searchResults);
+        return searchResults.slice(0, params.limit || 10);
+      }
+      
+      const searchResults = fuseResults.map(r => ({
         item: r.item,
         score: r.score || 0,
         matches: r.matches,
@@ -115,20 +148,8 @@ export class SearchEngine {
   }
 
   private buildFuseQuery(query: string): string {
-    // Support advanced search operators
-    if (query.includes('|') || query.includes("'") || query.includes('^') || query.includes('!')) {
-      return query;
-    }
-    
-    // For simple queries, make them more flexible
-    const terms = query.trim().split(/\s+/);
-    if (terms.length === 1) {
-      // Single word: search for exact or fuzzy match
-      return `'${query} | ${query}~2`;
-    }
-    
-    // Multiple words: search for all terms
-    return terms.map(term => `'${term}`).join(' ');
+    // Just return the query as-is for standard fuzzy search
+    return query.trim();
   }
 
   private generateCacheKey(params: SearchParams): string {
