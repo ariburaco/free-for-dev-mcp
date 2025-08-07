@@ -1,4 +1,7 @@
-# @free-for-dev/mcp-server
+# @ariburaco/free-for-dev-mcp
+
+[![npm version](https://badge.fury.io/js/@ariburaco%2Ffree-for-dev-mcp.svg)](https://www.npmjs.com/package/@ariburaco/free-for-dev-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A powerful Model Context Protocol (MCP) server that provides semantic search and intelligent access to the [free-for-dev](https://github.com/ripienaar/free-for-dev) repository - a comprehensive list of free services and tools for developers.
 
@@ -16,7 +19,7 @@ A powerful Model Context Protocol (MCP) server that provides semantic search and
 ### As an NPM Package
 
 ```bash
-npm install -g @free-for-dev/mcp-server
+npm install -g @ariburaco/free-for-dev-mcp
 ```
 
 ### From Source
@@ -38,16 +41,23 @@ bun start
 
 ## MCP Client Configuration
 
-### Claude Desktop
+### Claude Code
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+**Quick setup with Claude Code:**
+```bash
+claude mcp add free-for-dev -- npx @ariburaco/free-for-dev-mcp
+```
+
+### Cursor IDE
+
+Add to your Cursor MCP configuration in the Cursor Settings
 
 ```json
 {
   "mcpServers": {
     "free-for-dev": {
       "command": "npx",
-      "args": ["@free-for-dev/mcp-server"]
+      "args": ["@ariburaco/free-for-dev-mcp"]
     }
   }
 }
@@ -63,7 +73,7 @@ Add to your Continue configuration:
   "mcpServers": {
     "free-for-dev": {
       "command": "npx",
-      "args": ["@free-for-dev/mcp-server"]
+      "args": ["@ariburaco/free-for-dev-mcp"]
     }
   }
 }
@@ -78,7 +88,7 @@ import { spawn } from 'child_process';
 
 const transport = new StdioClientTransport({
   command: 'npx',
-  args: ['@free-for-dev/mcp-server']
+  args: ['@ariburaco/free-for-dev-mcp']
 });
 
 const client = new Client({
@@ -267,3 +277,7 @@ MIT - See [LICENSE](LICENSE) file for details.
 ## Support
 
 For issues and feature requests, please visit our [GitHub repository](https://github.com/ariburaco/free-for-dev-mcp).
+
+## NPM Package
+
+[![NPM](https://nodei.co/npm/@ariburaco/free-for-dev-mcp.png)](https://www.npmjs.com/package/@ariburaco/free-for-dev-mcp)
