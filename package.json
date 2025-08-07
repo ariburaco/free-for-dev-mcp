@@ -36,7 +36,11 @@
     "test:coverage": "vitest --coverage",
     "test-server": "bun run test-server.ts",
     "test-mcp": "bun run test-mcp-connection.ts",
-    "prepublishOnly": "bun run typecheck && bun run test && bun run build"
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build",
+    "release": "./scripts/release.sh",
+    "release:patch": "./scripts/release.sh patch",
+    "release:minor": "./scripts/release.sh minor",
+    "release:major": "./scripts/release.sh major"
   },
   "devDependencies": {
     "@types/bun": "latest",
