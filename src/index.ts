@@ -8,33 +8,18 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import type { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { FreeForDevParser } from './parser.ts';
+import { EnhancedFreeForDevParser } from './enhanced-parser.ts';
 import {
   SearchParamsSchema,
   ListCategoriesParamsSchema,
   GetServiceParamsSchema
 } from './types.ts';
 
-const parser = new FreeForDevParser();
-let isInitialized = false;
-
-async function initializeParser() {
-  if (!isInitialized) {
-    try {
-      await parser.fetchContent();
-      parser.parseMarkdown();
-      isInitialized = true;
-      console.error('Free-for-dev data loaded successfully');
-    } catch (error) {
-      console.error('Failed to initialize parser:', error);
-      throw error;
-    }
-  }
-}
+const parser = new EnhancedFreeForDevParser();
 
 const server = new Server(
   {
-    name: 'free-for-dev-mcp',
+    name: '@free-for-dev/mcp-server',
     version: '1.0.0',
   },
   {
@@ -46,8 +31,35 @@ const server = new Server(
 
 const TOOLS: Tool[] = [
   {
+    name: 'semantic_search',
+    description: 'Semantic/fuzzy search for free developer services using natural language',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Natural language search query'
+        },
+        category: {
+          type: 'string',
+          description: 'Filter by category name'
+        },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Filter by tags'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results (default: 10, max: 50)'
+        }
+      },
+      required: ['query']
+    }
+  },
+  {
     name: 'search_services',
-    description: 'Search for free developer services and tools',
+    description: 'Traditional search for free developer services',
     inputSchema: {
       type: 'object',
       properties: {
@@ -66,7 +78,38 @@ const TOOLS: Tool[] = [
         },
         limit: {
           type: 'number',
-          description: 'Maximum number of results to return (default: 10)'
+          description: 'Maximum number of results (default: 10)'
+        }
+      }
+    }
+  },
+  {
+    name: 'get_similar_services',
+    description: 'Find services similar to a given service',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        serviceName: {
+          type: 'string',
+          description: 'Name of the service to find similar ones for'
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of similar services (default: 5)'
+        }
+      },
+      required: ['serviceName']
+    }
+  },
+  {
+    name: 'get_popular_services',
+    description: 'Get the most popular/comprehensive free services',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Number of services to return (default: 10)'
         }
       }
     }
@@ -110,8 +153,16 @@ const TOOLS: Tool[] = [
     }
   },
   {
+    name: 'get_stats',
+    description: 'Get statistics about the service database and cache',
+    inputSchema: {
+      type: 'object',
+      properties: {}
+    }
+  },
+  {
     name: 'refresh_data',
-    description: 'Refresh the free-for-dev data from the source repository',
+    description: 'Refresh the free-for-dev data from GitHub',
     inputSchema: {
       type: 'object',
       properties: {}
@@ -124,12 +175,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  await initializeParser();
+  // Initialize parser on first request
+  await parser.initialize();
 
   const { name, arguments: args } = request.params;
 
   try {
     switch (name) {
+      case 'semantic_search': {
+        const params = SearchParamsSchema.parse(args);
+        const limit = Math.min(params.limit || 10, 50);
+        const results = parser.semanticSearch({ ...params, limit });
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                count: results.length,
+                results: results.map(result => ({
+                  service: {
+                    name: result.service.name,
+                    url: result.service.url,
+                    description: result.service.description,
+                    freeTier: result.service.freeTier,
+                    category: result.service.category,
+                    limitations: result.service.limitations,
+                    tags: result.service.tags
+                  },
+                  relevanceScore: Math.round((1 - result.score) * 100) // Convert to percentage
+                }))
+              }, null, 2)
+            }
+          ]
+        };
+      }
+
       case 'search_services': {
         const params = SearchParamsSchema.parse(args);
         const results = parser.searchServices(params);
@@ -141,6 +222,71 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: JSON.stringify({
                 count: results.length,
                 services: results.map(service => ({
+                  name: service.name,
+                  url: service.url,
+                  description: service.description,
+                  freeTier: service.freeTier,
+                  category: service.category,
+                  limitations: service.limitations,
+                  tags: service.tags
+                }))
+              }, null, 2)
+            }
+          ]
+        };
+      }
+
+      case 'get_similar_services': {
+        const { serviceName, limit = 5 } = args as { serviceName: string; limit?: number };
+        const service = parser.getService({ name: serviceName });
+        
+        if (!service) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  error: 'Service not found',
+                  serviceName
+                }, null, 2)
+              }
+            ]
+          };
+        }
+        
+        const similar = parser.getSimilarServices(service, limit);
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                originalService: service.name,
+                count: similar.length,
+                similarServices: similar.map(s => ({
+                  name: s.name,
+                  url: s.url,
+                  description: s.description,
+                  category: s.category,
+                  tags: s.tags
+                }))
+              }, null, 2)
+            }
+          ]
+        };
+      }
+
+      case 'get_popular_services': {
+        const { limit = 10 } = args as { limit?: number };
+        const popular = parser.getServicesByPopularity(limit);
+        
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                count: popular.length,
+                services: popular.map(service => ({
                   name: service.name,
                   url: service.url,
                   description: service.description,
@@ -235,10 +381,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'get_stats': {
+        const stats = parser.getStats();
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(stats, null, 2)
+            }
+          ]
+        };
+      }
+
       case 'refresh_data': {
         try {
-          await parser.fetchContent();
-          parser.parseMarkdown();
+          await parser.refresh();
+          const stats = parser.getStats();
           
           return {
             content: [
@@ -247,6 +405,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 text: JSON.stringify({
                   success: true,
                   message: 'Data refreshed successfully',
+                  stats: {
+                    totalServices: stats.services.total,
+                    totalCategories: stats.services.categories
+                  },
                   timestamp: new Date().toISOString()
                 }, null, 2)
               }
@@ -290,8 +452,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     return {
       content: [
         {
-          type: 'text',
-          text: JSON.stringify({
+            type: 'text',
+            text: JSON.stringify({
             error: error instanceof Error ? error.message : 'Unknown error'
           }, null, 2)
         }
@@ -304,7 +466,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error('Free-for-dev MCP server running on stdio');
+  console.error('Free-for-dev MCP server v1.0.0 running');
+  console.error('Initializing with cache support and semantic search...');
 }
 
 main().catch((error) => {

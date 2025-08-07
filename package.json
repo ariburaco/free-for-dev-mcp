@@ -1,25 +1,54 @@
 {
-  "name": "free-for-dev-mcp",
+  "name": "@free-for-dev/mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for free-for-dev resources",
+  "description": "MCP server providing semantic search for free developer tools and services",
   "main": "dist/index.js",
   "module": "src/index.ts",
   "type": "module",
-  "private": true,
+  "bin": {
+    "free-for-dev-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "free-for-dev",
+    "developer-tools",
+    "semantic-search"
+  ],
+  "author": "ariburaco",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ariburaco/free-for-dev-mcp.git"
+  },
   "scripts": {
     "start": "bun run dist/index.js",
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
-    "typecheck": "tsc --noEmit"
+    "build": "bun build src/index.ts --outdir dist --target node --minify",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "prepublishOnly": "bun run typecheck && bun run test && bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/marked": "^6.0.0",
     "@types/node": "^24.2.0",
-    "typescript": "^5"
+    "@vitest/ui": "^3.2.4",
+    "happy-dom": "^18.0.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.1",
+    "fuse.js": "^7.1.0",
+    "lru-cache": "^11.1.0",
     "marked": "^16.1.2",
     "zod": "^4.0.15"
   }

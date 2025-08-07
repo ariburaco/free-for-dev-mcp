@@ -1,0 +1,13 @@
+src/
+tests/
+.cache/
+node_modules/
+bun.lockb
+*.test.ts
+test-server.ts
+vitest.config.ts
+tsconfig.json
+.gitignore
+.cursor/
+README_MCP.md
+FREEFORDEV_README.md
