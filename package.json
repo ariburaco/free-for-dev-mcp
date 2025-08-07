@@ -1,0 +1,26 @@
+{
+  "name": "free-for-dev-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for free-for-dev resources",
+  "main": "dist/index.js",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run dist/index.js",
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir dist --target node",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/marked": "^6.0.0",
+    "@types/node": "^24.2.0",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.1",
+    "marked": "^16.1.2",
+    "zod": "^4.0.15"
+  }
+}
